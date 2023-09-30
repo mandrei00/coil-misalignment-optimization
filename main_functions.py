@@ -89,3 +89,21 @@ def self_inductance_coil(coil, r_turn, N=60, K=60):
                 mutual_inductance += np.sum(M)
     l += mutual_inductance
     return l
+
+
+def coupling_coefficient(coil_1, r1_turn, coil_2, r2_turn, d, po, fi):
+    """
+    Function for calculating the coupling coefficient between inductors.
+    :param coil_1:
+    :param r1_turn:
+    :param coil_2:
+    :param r2_turn:
+    :param d:
+    :param po:
+    :param fi:
+    :return:
+    """
+    l_1 = self_inductance_coil(coil_1, r1_turn)
+    l_2 = self_inductance_coil(coil_2, r2_turn)
+    m = mutual_inductance(coil_1, coil_2, d, po, fi)
+    return m / np.sqrt(l_1 * l_2)
