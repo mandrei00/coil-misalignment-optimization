@@ -1,6 +1,11 @@
 import numpy as np
 
 
+def quality_factor(r, l, c):
+    q = 1 / r * np.sqrt(l / c)
+    return q
+
+
 def mutual_inductance(coil_1, coil_2, d, po, fi, N=60, K=60):
     """
     Function for calculating mutual inductance between two flat inductors.
@@ -38,6 +43,7 @@ def mutual_inductance(coil_1, coil_2, d, po, fi, N=60, K=60):
                         m *= mu0 * coil_1[ri] * coil_2[rj] / (4 * np.pi)
                         mi_turns[ri][rj] = np.sum(m)
                 mi[ind_d][ind_p][ind_f] = np.sum(mi_turns)
+
     return mi
 
 
