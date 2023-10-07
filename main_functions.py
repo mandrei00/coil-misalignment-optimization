@@ -113,3 +113,80 @@ def coupling_coefficient(coil_1, r1_turn, coil_2, r2_turn, d, po, fi):
     l_2 = self_inductance_coil(coil_2, r2_turn)
     m = mutual_inductance(coil_1, coil_2, d, po, fi)
     return m / np.sqrt(l_1 * l_2)
+
+
+def calculation_r_in(coil_t, coil_r, distance, range_m):
+    start = 1e-3
+    finish = coil_r[1] - start * (coil_r[2] - 1)
+
+    pogr = 5e-4
+    eps = (start + finish) / 2
+
+    x1 = start
+    x2 = finish
+
+    x0 = (x1 + x2) / 2
+    m_x0 = mutual_inductance(
+        coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
+        coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
+        d=distance[0], po=distance[1], fi=distance[3]
+    )
+    i = 0
+    while eps >= pogr or np.max(m_x0) > range_m[1]:
+        i += 1
+        if np.max(m_x0) > range_m[1]:
+            x2 = x0
+            x0 = (x1 + x2) / 2
+            m_x0 = mutual_inductance(
+                coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
+                coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
+                d=distance[0], po=distance[1], fi=distance[3]
+            )
+        else:
+            x1 = x0
+            x0 = (x1 + x2) / 2
+            m_x0 = mutual_inductance(
+                coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
+                coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
+                d=distance[0], po=distance[1], fi=distance[3]
+            )
+
+        eps = (x2 - x1) / 2
+        if i > 15:
+            break
+
+    return x0
+
+
+def calculation_r_out_t_max(coil_t, coil_r,
+                            distance, range_m):
+
+    m = mutual_inductance(
+            coil_1=np.linspace(*coil_t),
+            coil_2=np.linspace(*coil_r),
+            d=distance[0], po=distance[1], fi=distance[2]
+    )
+
+    m_prev = m.copy()
+    r_out_t = 0
+    kof = 0
+    i = 0
+    while np.min(m) < range_m[0]:
+        i += 1
+        r_out_t += coil_r[1]
+
+        m = mutual_inductance(
+            coil_1=np.linspace(coil_t[0], r_out_t, coil_t[2]),
+            coil_2=np.linspace(*coil_r),
+            d=distance[0], po=distance[1], fi=distance[2]
+        )
+
+        if np.min(m_prev) > np.min(m) and i > 10:
+            kof = 1
+            break
+        m_prev = m
+
+    return kof, r_out_t
+
+
+    pass
