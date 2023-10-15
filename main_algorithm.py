@@ -83,7 +83,7 @@ def coil_optimization_algorithm(**kwargs):
                                        distance=(d, po, fi),
                                        range_m=(m_min, m_max))
 
-    # Step 7. Calculation of Mcalcmin and Mcalcmax
+    # Step 7. Calculation of Mcalcmin and Mcalcmax.
     m = mutual_inductance(
         coil_1=np.linspace(r_in_t, r_out_t, n_t),
         coil_2=np.linspace(r_in_r, r_out_r, k_r),
@@ -106,7 +106,11 @@ def coil_optimization_algorithm(**kwargs):
                                                        distance=(d, po, fi),
                                                        range_m=(m_min, m_max))
 
-        # Step 9. Calculation of R outT.
+    # Step 8. Calculation of R outT.
+    r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t, n_t),
+                                  coil_r=(r_in_r, r_out_r, k_r),
+                                  distance=(d, po, fi),
+                                  range_m=(m_min, m_max))
 
 
 

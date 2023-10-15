@@ -160,13 +160,11 @@ def calculation_r_in(coil_t, coil_r, distance, range_m):
 
 def calculation_r_out_t_max(coil_t, coil_r,
                             distance, range_m):
-
     m = mutual_inductance(
             coil_1=np.linspace(*coil_t),
             coil_2=np.linspace(*coil_r),
             d=distance[0], po=distance[1], fi=distance[2]
     )
-
     m_prev = m.copy()
     r_out_t = 0
     kof = 0
@@ -174,13 +172,11 @@ def calculation_r_out_t_max(coil_t, coil_r,
     while np.min(m) < range_m[0]:
         i += 1
         r_out_t += coil_r[1]
-
         m = mutual_inductance(
             coil_1=np.linspace(coil_t[0], r_out_t, coil_t[2]),
             coil_2=np.linspace(*coil_r),
             d=distance[0], po=distance[1], fi=distance[2]
         )
-
         if np.min(m_prev) > np.min(m) and i > 10:
             kof = 1
             break
@@ -189,4 +185,56 @@ def calculation_r_out_t_max(coil_t, coil_r,
     return kof, r_out_t
 
 
-    pass
+def calculation_r_out_t(coil_t, coil_r,
+                        distance, range_m):
+    a = coil_r[1]
+    b = coil_t[1]
+    pogr = 5e-4
+
+    eps = (a + b) / 2
+
+    x1 = a
+    m_x1 = mutual_inductance(
+        coil_1=np.linspace(coil_t[0], x1, coil_t[2]),
+        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        d=distance[0], po=distance[1], fi=distance[2]
+    )
+
+    x2 = b
+    m_x2 = mutual_inductance(
+        coil_1=np.linspace(coil_t[0], x2, coil_t[2]),
+        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        d=distance[0], po=distance[1], fi=distance[2]
+    )
+
+    x0 = (x1 + x2) / 2
+    m_x0 = mutual_inductance(
+        coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
+        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        d=distance[0], po=distance[1], fi=distance[2]
+    )
+
+    while eps >= pogr or np.min(m_x0) < range_m[0]:
+        if np.min(m_x0) > range_m[0]:
+            x2 = x0
+
+            x0 = (x1 + x2) / 2
+            m_x0 = mutual_inductance(
+                coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
+                coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+                d=distance[0], po=distance[1], fi=distance[2]
+            )
+        else:
+            x1 = x0
+
+            x0 = (x1 + x2) / 2
+            m_x0 = m_x0 = mutual_inductance(
+                coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
+                coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+                d=distance[0], po=distance[1], fi=distance[2]
+            )
+
+        eps = (x2 - x1) / 2
+
+    return x0
+
