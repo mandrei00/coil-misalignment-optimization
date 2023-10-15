@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def quality_factor(r, l, c):
@@ -121,41 +122,42 @@ def calculation_r_in(coil_t, coil_r, distance, range_m):
 
     pogr = 5e-4
     eps = (start + finish) / 2
-
+    kof = 0
     x1 = start
     x2 = finish
 
     x0 = (x1 + x2) / 2
     m_x0 = mutual_inductance(
         coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
-        coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
-        d=distance[0], po=distance[1], fi=distance[3]
+        coil_2=np.linspace(x0, coil_r[1], coil_r[2]),
+        d=distance[0], po=distance[1], fi=distance[2]
     )
     i = 0
     while eps >= pogr or np.max(m_x0) > range_m[1]:
+
         i += 1
         if np.max(m_x0) > range_m[1]:
             x2 = x0
             x0 = (x1 + x2) / 2
             m_x0 = mutual_inductance(
                 coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
-                coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
-                d=distance[0], po=distance[1], fi=distance[3]
+                coil_2=np.linspace(x0, coil_r[1], coil_r[2]),
+                d=distance[0], po=distance[1], fi=distance[2]
             )
         else:
             x1 = x0
             x0 = (x1 + x2) / 2
             m_x0 = mutual_inductance(
                 coil_1=np.linspace(x0, coil_t[1], coil_t[2]),
-                coil_2=np.linspace(x0, coil_t[1], coil_t[2]),
-                d=distance[0], po=distance[1], fi=distance[3]
+                coil_2=np.linspace(x0, coil_r[1], coil_r[2]),
+                d=distance[0], po=distance[1], fi=distance[2]
             )
-
         eps = (x2 - x1) / 2
         if i > 15:
+            kof = 1
             break
 
-    return x0
+    return kof, x0
 
 
 def calculation_r_out_t_max(coil_t, coil_r,
@@ -196,21 +198,21 @@ def calculation_r_out_t(coil_t, coil_r,
     x1 = a
     m_x1 = mutual_inductance(
         coil_1=np.linspace(coil_t[0], x1, coil_t[2]),
-        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        coil_2=np.linspace(*coil_r),
         d=distance[0], po=distance[1], fi=distance[2]
     )
 
     x2 = b
     m_x2 = mutual_inductance(
         coil_1=np.linspace(coil_t[0], x2, coil_t[2]),
-        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        coil_2=np.linspace(*coil_r),
         d=distance[0], po=distance[1], fi=distance[2]
     )
 
     x0 = (x1 + x2) / 2
     m_x0 = mutual_inductance(
         coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
-        coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+        coil_2=np.linspace(*coil_r),
         d=distance[0], po=distance[1], fi=distance[2]
     )
 
@@ -221,7 +223,7 @@ def calculation_r_out_t(coil_t, coil_r,
             x0 = (x1 + x2) / 2
             m_x0 = mutual_inductance(
                 coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
-                coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+                coil_2=np.linspace(*coil_r),
                 d=distance[0], po=distance[1], fi=distance[2]
             )
         else:
@@ -230,7 +232,7 @@ def calculation_r_out_t(coil_t, coil_r,
             x0 = (x1 + x2) / 2
             m_x0 = m_x0 = mutual_inductance(
                 coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
-                coil_2=np.linspace(coil_r[0], coil_r[1], coil_r[2]),
+                coil_2=np.linspace(*coil_r),
                 d=distance[0], po=distance[1], fi=distance[2]
             )
 
@@ -238,3 +240,16 @@ def calculation_r_out_t(coil_t, coil_r,
 
     return x0
 
+
+def debug(ro, m_max, m_min, m=None, title=None, x_label="ro, м", y_label="M, Гн"):
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.plot(ro, m_max * np.ones(ro.shape), "k--", )
+    plt.plot(ro, m_min * np.ones(ro.shape), "k--", )
+    if m is not None:
+        plt.plot(ro, m, label="Оптимизированный случай")
+    plt.grid()
+    if title is not None:
+        plt.title(title)
+    plt.legend(loc="best")
+    plt.show()
