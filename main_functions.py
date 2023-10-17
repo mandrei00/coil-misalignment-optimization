@@ -182,7 +182,7 @@ def calculation_r_out_t_max(coil_t, coil_r,
         if np.min(m_prev) > np.min(m) and i > 10:
             kof = 1
             break
-        m_prev = m
+        m_prev = m.copy()
 
     return kof, r_out_t
 
@@ -196,18 +196,7 @@ def calculation_r_out_t(coil_t, coil_r,
     eps = (a + b) / 2
 
     x1 = a
-    m_x1 = mutual_inductance(
-        coil_1=np.linspace(coil_t[0], x1, coil_t[2]),
-        coil_2=np.linspace(*coil_r),
-        d=distance[0], po=distance[1], fi=distance[2]
-    )
-
     x2 = b
-    m_x2 = mutual_inductance(
-        coil_1=np.linspace(coil_t[0], x2, coil_t[2]),
-        coil_2=np.linspace(*coil_r),
-        d=distance[0], po=distance[1], fi=distance[2]
-    )
 
     x0 = (x1 + x2) / 2
     m_x0 = mutual_inductance(
@@ -230,7 +219,7 @@ def calculation_r_out_t(coil_t, coil_r,
             x1 = x0
 
             x0 = (x1 + x2) / 2
-            m_x0 = m_x0 = mutual_inductance(
+            m_x0 = mutual_inductance(
                 coil_1=np.linspace(coil_t[0], x0, coil_t[2]),
                 coil_2=np.linspace(*coil_r),
                 d=distance[0], po=distance[1], fi=distance[2]
