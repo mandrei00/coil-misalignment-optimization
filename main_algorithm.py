@@ -91,7 +91,6 @@ def coil_optimization_algorithm(**kwargs):
                                      range_m=(m_min, m_max))
     r_in_t = r_in_r
 
-
     # Step 7. Calculation of Mcalcmin and Mcalcmax.
     print("Running step 7.")
     m = mutual_inductance(
@@ -118,33 +117,41 @@ def coil_optimization_algorithm(**kwargs):
                                                        distance=(d, po, fi),
                                                        range_m=(m_min, m_max))
 
-    # Step 9. Calculation of R outT.
-    print("Running step 9.")
-    r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t, n_t),
-                                  coil_r=(r_in_r, r_out_r, k_r),
-                                  distance=(d, po, fi),
-                                  range_m=(m_min, m_max))
+        # Step 9. Calculation of R outT.
+        print("Running step 9.")
+        r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t_max, n_t),
+                                      coil_r=(r_in_r, r_out_r, k_r),
+                                      distance=(d, po, fi),
+                                      range_m=(m_min, m_max))
 
-    # Step 10. Recalculation R_in.
-    print("Running step 10.")
-    r_in_t = r_in_r = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
+        # Step 10. Recalculation R_in.
+        print("Running step 10.")
+        kof_2, r_in = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
                                        coil_r=(r_in_r, r_out_r, k_r),
                                        distance=(d, po, fi),
                                        range_m=(m_min, m_max))
 
-    while kof_2 == 1:
-        if k_r >= 2:
-            k_r -= 1
+        r_in_t = r_in_r = r_in
 
-            kof_2, r_in_r = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
-                                             coil_r=(r_in_r, r_out_r, k_r),
-                                             distance=(d, po, fi),
-                                             range_m=(m_min, m_max))
-            r_in_t = r_in_r
-        else:
-            print("Optimization is not Possible.")
-            kof_2 = 0
-            kof = 1
+        while kof_2 == 1:
+            if k_r >= 2:
+                k_r -= 1
+
+                kof_2, r_in_r = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
+                                                 coil_r=(r_in_r, r_out_r, k_r),
+                                                 distance=(d, po, fi),
+                                                 range_m=(m_min, m_max))
+                r_in_t = r_in_r
+            else:
+                print("Optimization is not Possible.")
+                kof_2 = 0
+                kof = 1
+
+        m = mutual_inductance(
+            coil_1=np.linspace(r_in_t, r_out_t, n_t),
+            coil_2=np.linspace(r_in_r, r_out_r, k_r),
+            d=d, po=po, fi=fi
+        )
 
     # Step 11. Recalculation of L_t, L_r and C_t, C_r
     print("Running step 11.")
@@ -172,8 +179,9 @@ def coil_optimization_algorithm(**kwargs):
           f"               \n Lr={l_r * 1e6} мкГн",
           f"               \n Cr={c_r * 1e9} нФ\n")
 
+    # ToDo: make func that adaptation shape
     debug(ro=po, m_max=m_max, m_min=m_min,
-          m=m, title="Взаимная индуктивность")
+          m=m[0, :, 0], title="Взаимная индуктивность")
 
     print(f"Permissible difference in mutual inductance: dM={(m_max - m_min) / m_max * 100}%")
     print(f"The resulting difference in mutual inductance: dM={(np.max(m) - np.min(m)) / np.max(m) * 100}%")
@@ -182,8 +190,9 @@ def coil_optimization_algorithm(**kwargs):
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
 
-    debug(ro=m, m_max=p_max, m_min=p_min,
-          m=p_l, title="Выходная мощность",
+    # ToDo: make func that adaptation shape
+    debug(ro=m[0, :, 0], m_max=p_max, m_min=p_min,
+          m=p_l[0, :, 0], title="Выходная мощность",
           x_label="M, Гн", y_label="P, Вт")
 
     print(f"Permissible difference in mutual inductance: dP={(p_max - p_min) / p_max * 100}%")
