@@ -4,12 +4,25 @@ import numpy as np
 import csv
 
 DATASET = "datasets/dataset.csv"
+RESULT = "datasets/results.csv"
 
 
 def read(csv_filename):
     with open(csv_filename, "r") as file:
         data = list(csv.DictReader(file))
     return data
+
+
+def write(csv_filename, data):
+    if data is []:
+        return
+    fields_name = list(data[0].keys())
+    with open(csv_filename, "w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fields_name)
+        writer.writeheader()
+        writer.writerows(data)
+        # for d in data:
+        #     writer.writerow(d)
 
 
 def coil_optimization_algorithm(**kwargs):
@@ -198,13 +211,25 @@ def coil_optimization_algorithm(**kwargs):
     print(f"Permissible difference in mutual inductance: dP={(p_max - p_min) / p_max * 100}%")
     print(f"The resulting difference in mutual inductance: dP={(np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100}%")
 
+    result = {"name":kwargs["name"], "power":p, "n":n, "f":f,
+              "r_l":r_l, "r_t":r_t, "r_r":r_r,
+              "r_turn":r_turn,
+              "r_in_t":r_in_t, "r_out_t":r_out_t, "n_t":n_t, "l_t":l_t, "c_t":c_t,
+              "r_in_r":r_in_r, "r_out_r":r_out_r, "k_r":k_r, "l_r":l_r, "c_r":c_r,
+              "d_min":d_min, "d_max":d_max,
+              "po_min":po_min, "po_max":po_max,
+              "fi_min":fi_min, "fi_max":fi_max
+              }
+    return result
+
 
 def main():
+    res = []
     for data in read(DATASET):
-        print(data)
         if data["name"] == "test1":
-            coil_optimization_algorithm(**data)
+            res.append(coil_optimization_algorithm(**data))
             break
+    write(RESULT, res)
 
 
 if __name__ == "__main__":
