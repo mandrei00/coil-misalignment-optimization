@@ -1,5 +1,6 @@
 from main_functions import *
 
+NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
 
 def hill_climbing(coil_t, coil_r, distance, min_max_m):
     n_t_max = int((coil_t[1] - coil_t[0]) / (2 * coil_t[3]) + 1)
@@ -38,7 +39,7 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
     return n_t, k_r
 
 
-def stochastic_optimization_algorithm(**kwargs):
+def stochastic_optimization_algorithm_1(**kwargs):
     # get parameters of output power and its differential
     p = float(kwargs["power"])
     n = float(kwargs["n"])
@@ -168,6 +169,12 @@ def stochastic_optimization_algorithm(**kwargs):
     l_r = self_inductance_coil(np.linspace(r_in_r, r_out_r, k_r), r_turn)
     c_r = 1 / (w ** 2 * l_r)
 
+    m = mutual_inductance(
+        coil_1=np.linspace(r_in_r, r_out_r, k_r),
+        coil_2=np.linspace(r_in_t, r_out_t, n_t),
+        d=d, po=po, fi=fi
+    )
+
     print(f"Transmitting part:\n r in_t={r_in_t * 1e3} мм"
           f"                  \n r out_t={r_out_t * 1e3} мм"
           f"                  \n Nt={n_t}",
@@ -180,36 +187,36 @@ def stochastic_optimization_algorithm(**kwargs):
           f"               \n Lr={l_r * 1e6} мкГн",
           f"               \n Cr={c_r * 1e9} нФ\n")
 
-    m = mutual_inductance(
-        coil_1=np.linspace(r_in_t, r_out_t, n_t),
-        coil_2=np.linspace(r_in_r, r_out_r, k_r),
-        d=d, po=po, fi=fi
-    )
+    debug(x=po, y_max=m_max, y_min=m_min,
+          y=m[0, :, 0], title="Взаимная индуктивность")
 
-    # ToDo: make func that adaptation shape
-    debug(ro=po, m_max=m_max, m_min=m_min,
-          m=m[0, :, 0], title="Взаимная индуктивность")
-
-    print(f"Permissible difference in mutual inductance: dM={(m_max - m_min) / m_max * 100}%")
-    print(f"The resulting difference in mutual inductance: dM={(np.max(m) - np.min(m)) / np.max(m) * 100}%")
+    print(f"Permissible difference in mutual inductance: dM="
+          f"{np.round((m_max - m_min) / m_max * 100, 3)} %")
+    print(f"The resulting difference in mutual inductance: dM="
+          f"{np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)} %")
 
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
 
-    # ToDo: make func that adaptation shape
-    debug(ro=m[0, :, 0], m_max=p_max, m_min=p_min,
-          m=p_l[0, :, 0], title="Выходная мощность",
+    debug(x=m[0, :, 0], y_max=p_max, y_min=p_min,
+          y=p_l[0, :, 0], title="Выходная мощность",
           x_label="M, Гн", y_label="P, Вт")
 
-    print(f"Permissible difference in mutual inductance: dP={(p_max - p_min) / p_max * 100}%")
-    print(f"The resulting difference in mutual inductance: dP={(np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100}%")
+    print(f"Permissible difference in mutual inductance: dP="
+          f"{np.round((p_max - p_min) / p_max * 100, 3)} %")
+    print(f"The resulting difference in mutual inductance: dP="
+          f"{np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)} %")
 
-    result = {"name": kwargs["name"], "power": p, "n": n, "f": f,
+    result = {"name_test": kwargs["name"], "name_algorithm": NAME_ALGORITHM,
+              "power": p, "n": n, "f": f,
               "r_l": r_l, "r_t": r_t, "r_r": r_r,
               "r_turn": r_turn,
-              "r_in_t": r_in_t, "r_out_t": r_out_t, "n_t": n_t, "l_t": l_t, "c_t": c_t,
-              "r_in_r": r_in_r, "r_out_r": r_out_r, "k_r": k_r, "l_r": l_r, "c_r": c_r,
+              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t, "c_t": c_t,
+              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r, "c_r": c_r,
+              "m_min": m_min, "m_max": m_max,
+              "p_min": p_min, "p_max": p_max,
+              "m": m[0, :, 0], "p_l": p_l[0, :, 0],
               "d_min": d_min, "d_max": d_max,
               "po_min": po_min, "po_max": po_max,
               "fi_min": fi_min, "fi_max": fi_max
@@ -218,15 +225,19 @@ def stochastic_optimization_algorithm(**kwargs):
 
 
 def main():
-    from main_algorithm import read, DATASET
+    from main_algorithm import read, write, DATASET
+    dataset = "../" + DATASET
 
-    DATASET = r"../" + DATASET
-    print(DATASET)
+    # an array of geometry optimization results for each test
     res = []
-    for data in read(DATASET):
+    for data in read(dataset):
         if data["name"] == "test1":
-            res.append(stochastic_optimization_algorithm(**data))
+            res.append(stochastic_optimization_algorithm_1(**data))
             break
+
+    # save result of geometry optimization for each test
+    result = f"../result/algorithm_1_result.csv"
+    write(result, res)
 
 
 if __name__ == "__main__":

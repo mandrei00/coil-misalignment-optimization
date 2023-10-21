@@ -13,7 +13,7 @@ def read_result(name_file, name_set):
     with open(name_file, "r") as file:
         data = list(csv.DictReader(file))
         for d in data:
-            if "name" in d and d["name"] == name_set:
+            if "name_test" in d and d["name_test"] == name_set:
                 ret = d
     return ret
 
@@ -54,17 +54,21 @@ def main():
     min_max_p = []
     for res in diff_results:
         if "p_l" in res and "m" in res and "name_algorithm" in res:
-            labels.append(res["name_algorithms"])
+            labels.append(res["name_algorithm"])
 
-            power.append(res["p_l"])
+            p_l = res["p_l"].replace("\n", "").replace("[", "").replace("]", "")
+            p_l = np.fromstring(p_l, sep=" ", dtype=float)
+            power.append(p_l)
             min_max_p.append(float(res["p_min"]))
             min_max_p.append(float(res["p_max"]))
 
-            mutual_inductance.append(res["m"])
+            m = res["m"].replace("\n", "").replace("[", "").replace("]", "")
+            m = np.fromstring(m, sep=" ", dtype=float)
+            mutual_inductance.append(m)
             min_max_m.append(float(res["m_min"]))
             min_max_m.append(float(res["m_max"]))
 
-            po = np.linspace(float(res["po_min"]), float("po_max"), len(res["p_l"]))
+            po = np.linspace(float(res["po_min"]), float(res["po_max"]), len(p_l))
 
     plot_diff(
         x=po, ys=mutual_inductance, labels=labels,

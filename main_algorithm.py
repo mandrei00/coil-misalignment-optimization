@@ -3,9 +3,8 @@ from main_functions import *
 import numpy as np
 import csv
 
-DATASET = "datasets/dataset.csv"
-RESULT = "datasets/results.csv"
-
+DATASET = "dataset/dataset.csv"
+NAME_ALGORITHM = "Детерминированный алгоритм"
 
 def read(csv_filename):
     with open(csv_filename, "r") as file:
@@ -21,8 +20,6 @@ def write(csv_filename, data):
         writer = csv.DictWriter(file, fieldnames=fields_name)
         writer.writeheader()
         writer.writerows(data)
-        # for d in data:
-        #     writer.writerow(d)
 
 
 def coil_optimization_algorithm(**kwargs):
@@ -192,46 +189,55 @@ def coil_optimization_algorithm(**kwargs):
           f"               \n Lr={l_r * 1e6} мкГн",
           f"               \n Cr={c_r * 1e9} нФ\n")
 
-    # ToDo: make func that adaptation shape
-    debug(ro=po, m_max=m_max, m_min=m_min,
-          m=m[0, :, 0], title="Взаимная индуктивность")
+    debug(x=po, y_max=m_max, y_min=m_min,
+          y=m[0, :, 0], title="Взаимная индуктивность")
 
-    print(f"Permissible difference in mutual inductance: dM={(m_max - m_min) / m_max * 100}%")
-    print(f"The resulting difference in mutual inductance: dM={(np.max(m) - np.min(m)) / np.max(m) * 100}%")
+    print(f"Permissible difference in mutual inductance: dM="
+          f"{np.round((m_max - m_min) / m_max * 100, 3)} %")
+    print(f"The resulting difference in mutual inductance: dM="
+          f"{np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)} %")
 
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
 
-    # ToDo: make func that adaptation shape
-    debug(ro=m[0, :, 0], m_max=p_max, m_min=p_min,
-          m=p_l[0, :, 0], title="Выходная мощность",
+    debug(x=m[0, :, 0], y_max=p_max, y_min=p_min,
+          y=p_l[0, :, 0], title="Выходная мощность",
           x_label="M, Гн", y_label="P, Вт")
 
-    print(f"Permissible difference in mutual inductance: dP={(p_max - p_min) / p_max * 100}%")
-    print(f"The resulting difference in mutual inductance: dP={(np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100}%")
+    print(f"Permissible difference in mutual inductance: dP="
+          f"{np.round((p_max - p_min) / p_max * 100, 3)} %")
+    print(f"The resulting difference in mutual inductance: dP="
+          f"{np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)} %")
 
-    result = {"name":kwargs["name"], "power":p, "n":n, "f":f,
-              "r_l":r_l, "r_t":r_t, "r_r":r_r,
-              "r_turn":r_turn,
-              "r_in_t":r_in_t, "r_out_t":r_out_t, "n_t":n_t, "l_t":l_t, "c_t":c_t,
-              "r_in_r":r_in_r, "r_out_r":r_out_r, "k_r":k_r, "l_r":l_r, "c_r":c_r,
-              "d_min":d_min, "d_max":d_max,
-              "po_min":po_min, "po_max":po_max,
-              "fi_min":fi_min, "fi_max":fi_max
+    result = {"name_test": kwargs["name"], "name_algorithm": NAME_ALGORITHM,
+              "power": p, "n": n, "f": f,
+              "r_l": r_l, "r_t": r_t, "r_r": r_r,
+              "r_turn": r_turn,
+              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t, "c_t": c_t,
+              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r, "c_r": c_r,
+              "m_min": m_min, "m_max": m_max,
+              "p_min": p_min, "p_max": p_max,
+              "m": m[0, :, 0], "p_l": p_l[0, :, 0],
+              "d_min": d_min, "d_max": d_max,
+              "po_min": po_min, "po_max": po_max,
+              "fi_min": fi_min, "fi_max": fi_max
               }
     return result
 
 
 def main():
+    # an array of geometry optimization results for each test
     res = []
     for data in read(DATASET):
         if data["name"] == "test1":
             res.append(coil_optimization_algorithm(**data))
             break
-    write(RESULT, res)
+
+    # save result of geometry optimization for each test
+    result = "result/determine_algorithm_result.csv"
+    write(result, res)
 
 
 if __name__ == "__main__":
     main()
-
