@@ -6,6 +6,7 @@ import numpy as np
 RESULTS = [
     "result/algorithm_1_result.csv",
     "result/algorithm_2_result.csv",
+    "result/algorithm_3_result.csv",
     "result/determine_algorithm_result.csv"
 ]
 
@@ -34,7 +35,7 @@ def plot_diff(x, ys, labels, x_label, y_label, y_max=None, y_min=None, title=Non
     plt.grid()
     if title is not None:
         plt.title(title)
-    plt.legend(loc="best")
+    plt.legend(loc="lower center")
     plt.show()
 
 
