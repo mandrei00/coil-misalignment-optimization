@@ -1,3 +1,4 @@
+from main_algorithm import read, write, DATASET
 from main_functions import *
 
 NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
@@ -225,7 +226,6 @@ def stochastic_optimization_algorithm_1(**kwargs):
 
 
 def main():
-    from main_algorithm import read, write, DATASET
     dataset = "../" + DATASET
 
     # an array of geometry optimization results for each test

@@ -5,6 +5,7 @@ import numpy as np
 
 RESULTS = [
     "result/algorithm_1_result.csv",
+    "result/algorithm_2_result.csv",
     "result/determine_algorithm_result.csv"
 ]
 
