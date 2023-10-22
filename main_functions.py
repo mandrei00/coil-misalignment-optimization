@@ -230,13 +230,14 @@ def calculation_r_out_t(coil_t, coil_r,
     return x0
 
 
-def debug(ro, m_max, m_min, m=None, title=None, x_label="ro, м", y_label="M, Гн"):
+def debug(x, y, y_max=None, y_min=None, title=None, x_label="ro, м", y_label="M, Гн"):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.plot(ro, m_max * np.ones(ro.shape), "k--", )
-    plt.plot(ro, m_min * np.ones(ro.shape), "k--", )
-    if m is not None:
-        plt.plot(ro, m, label="Оптимизированный случай")
+    if y_max is not None and y_min is not None:
+        plt.plot(x, y_max * np.ones(x.shape), "k--", )
+        plt.plot(x, y_min * np.ones(x.shape), "k--", )
+    if y is not None:
+        plt.plot(x, y, label="Оптимизированный случай")
     plt.grid()
     if title is not None:
         plt.title(title)

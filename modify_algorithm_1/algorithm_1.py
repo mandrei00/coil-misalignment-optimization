@@ -1,33 +1,46 @@
+from main_algorithm import read, write, DATASET
 from main_functions import *
 
-import numpy as np
-import csv
+NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
 
-DATASET = "dataset/dataset.csv"
-NAME_ALGORITHM = "Детерминированный алгоритм"
+def hill_climbing(coil_t, coil_r, distance, min_max_m):
+    n_t_max = int((coil_t[1] - coil_t[0]) / (2 * coil_t[3]) + 1)
+    k_r_max = int((coil_r[1] - coil_r[0]) / (2 * coil_r[3]) + 1)
 
-def read(csv_filename):
-    with open(csv_filename, "r") as file:
-        data = list(csv.DictReader(file))
-    return data
+    n_t, k_r = coil_t[2], coil_r[2]
+
+    iterations = 1000
+    for _ in range(iterations):
+
+        n_tq = np.random.randint(2, n_t_max)
+        k_rq = np.random.randint(2, k_r_max)
+
+        m_q = mutual_inductance(
+            coil_1=np.linspace(coil_t[0], coil_t[1], n_tq),
+            coil_2=np.linspace(coil_r[0], coil_r[1], k_rq),
+            d=distance[0], po=distance[1], fi=distance[2]
+        )
+
+        if np.max(m_q) < min_max_m[1] and np.min(m_q) > min_max_m[0]:
+            n_t = n_tq
+            k_r = k_rq
+            print(f"Find best combination n_t={n_t} k_r={k_r}")
+            break
+
+    m = mutual_inductance(
+        coil_1=np.linspace(coil_t[0], coil_t[1], n_t),
+        coil_2=np.linspace(coil_r[0], coil_r[1], k_r),
+        d=distance[0], po=distance[1], fi=distance[2]
+    )
+
+    # # ToDo: make func that adaptation shape
+    # debug(ro=distance[1], m_max=min_max_m[1], m_min=min_max_m[0],
+    #       m=m[0, :, 0], title="Взаимная индуктивность")
+
+    return n_t, k_r
 
 
-def write(csv_filename, data):
-    if data is []:
-        return
-    fields_name = list(data[0].keys())
-    with open(csv_filename, "w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fields_name)
-        writer.writeheader()
-        writer.writerows(data)
-
-
-def coil_optimization_algorithm(**kwargs):
-    """
-    :param kwargs:
-    :return:
-    """
-
+def stochastic_optimization_algorithm_1(**kwargs):
     # get parameters of output power and its differential
     p = float(kwargs["power"])
     n = float(kwargs["n"])
@@ -109,62 +122,48 @@ def coil_optimization_algorithm(**kwargs):
         d=d, po=po, fi=fi
     )
 
-    kof = 0
-    while np.min(m) < m_min or np.max(m) > m_max and kof == 0:
+    # Step 8. Calculation of R outT max.
+    print("Running step 8.")
+    kof, r_out_t_max = calculation_r_out_t_max(coil_t=(r_in_t, r_out_t, n_t),
+                                               coil_r=(r_in_r, r_out_r, k_r),
+                                               distance=(d, po, fi),
+                                               range_m=(m_min, m_max))
 
-        # Step 8. Calculation of R outT max.
+    while kof == 1:
+        n_t += 1
         print("Running step 8.")
         kof, r_out_t_max = calculation_r_out_t_max(coil_t=(r_in_t, r_out_t, n_t),
                                                    coil_r=(r_in_r, r_out_r, k_r),
                                                    distance=(d, po, fi),
                                                    range_m=(m_min, m_max))
 
-        while kof == 1:
-            n_t += 1
-            print("Running step 8.")
-            kof, r_out_t_max = calculation_r_out_t_max(coil_t=(r_in_t, r_out_t, n_t),
-                                                       coil_r=(r_in_r, r_out_r, k_r),
-                                                       distance=(d, po, fi),
-                                                       range_m=(m_min, m_max))
+    # Step 9. Calculation of R outT.
+    print("Running step 9.")
+    r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t_max, n_t),
+                                  coil_r=(r_in_r, r_out_r, k_r),
+                                  distance=(d, po, fi),
+                                  range_m=(m_min, m_max))
 
-        # Step 9. Calculation of R outT.
-        print("Running step 9.")
-        r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t_max, n_t),
-                                      coil_r=(r_in_r, r_out_r, k_r),
-                                      distance=(d, po, fi),
-                                      range_m=(m_min, m_max))
+    # Step 10. Recalculation R_in.
+    print("Running step 10.")
+    kof_2, r_in = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
+                                   coil_r=(r_in_r, r_out_r, k_r),
+                                   distance=(d, po, fi),
+                                   range_m=(m_min, m_max))
 
-        # Step 10. Recalculation R_in.
-        print("Running step 10.")
-        kof_2, r_in = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
-                                       coil_r=(r_in_r, r_out_r, k_r),
-                                       distance=(d, po, fi),
-                                       range_m=(m_min, m_max))
+    r_in_t = r_in_r = r_in
 
-        r_in_t = r_in_r = r_in
+    # Step 11. Run hill climbing for search the best combination count of the turn coil
+    print("Running step 11.\n")
+    n_t, k_r = hill_climbing(
+        coil_t=(r_in_t, r_out_t, n_t, r_turn),
+        coil_r=(r_in_t, r_out_r, k_r, r_turn),
+        distance=(d, po, fi),
+        min_max_m=(m_min, m_max)
+    )
 
-        while kof_2 == 1:
-            if k_r >= 2:
-                k_r -= 1
-
-                kof_2, r_in_r = calculation_r_in(coil_t=(r_in_t, r_out_t, n_t),
-                                                 coil_r=(r_in_r, r_out_r, k_r),
-                                                 distance=(d, po, fi),
-                                                 range_m=(m_min, m_max))
-                r_in_t = r_in_r
-            else:
-                print("Optimization is not Possible.")
-                kof_2 = 0
-                kof = 1
-
-        m = mutual_inductance(
-            coil_1=np.linspace(r_in_t, r_out_t, n_t),
-            coil_2=np.linspace(r_in_r, r_out_r, k_r),
-            d=d, po=po, fi=fi
-        )
-
-    # Step 11. Recalculation of L_t, L_r and C_t, C_r
-    print("Running step 11.")
+    # Step 12. Recalculation of L_t, L_r and C_t, C_r
+    print("Running step 12.")
     l_t = self_inductance_coil(np.linspace(r_in_t, r_out_t, n_t), r_turn)
     c_t = 1 / (w ** 2 * l_t)
 
@@ -227,17 +226,20 @@ def coil_optimization_algorithm(**kwargs):
 
 
 def main():
+    dataset = "../" + DATASET
+
     # an array of geometry optimization results for each test
     res = []
-    for data in read(DATASET):
+    for data in read(dataset):
         if data["name"] == "test1":
-            res.append(coil_optimization_algorithm(**data))
+            res.append(stochastic_optimization_algorithm_1(**data))
             break
 
     # save result of geometry optimization for each test
-    result = "result/determine_algorithm_result.csv"
+    result = f"../result/algorithm_1_result.csv"
     write(result, res)
 
 
 if __name__ == "__main__":
     main()
+
