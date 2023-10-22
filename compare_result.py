@@ -7,7 +7,7 @@ RESULTS = [
     "result/algorithm_1_result.csv",
     "result/algorithm_2_result.csv",
     "result/algorithm_3_result.csv",
-    "result/determine_algorithm_result.csv"
+    "result/deterministic_algorithm_result.csv"
 ]
 
 
@@ -15,7 +15,7 @@ def read_result(name_file, name_set):
     with open(name_file, "r") as file:
         data = list(csv.DictReader(file))
         for d in data:
-            if "name_test" in d and d["name_test"] == name_set:
+            if "test_name" in d and d["test_name"] == name_set:
                 ret = d
     return ret
 
@@ -24,18 +24,18 @@ def plot_diff(x, ys, labels, x_label, y_label, y_max=None, y_min=None, title=Non
     if x_label is not None and y_label is not None:
         plt.xlabel(x_label)
         plt.ylabel(y_label)
-
+    # draw a boundary line
     if y_max is not None and y_min is not None:
         plt.plot(x, y_max * np.ones(x.shape), "k--", )
         plt.plot(x, y_min * np.ones(x.shape), "k--", )
-
+    # draw each function graph
     for ind in range(len(labels)):
         plt.plot(x, ys[ind], label=labels[ind])
 
     plt.grid()
     if title is not None:
         plt.title(title)
-    plt.legend(loc="lower center")
+    plt.legend(loc="best")
     plt.show()
 
 
@@ -55,8 +55,8 @@ def main():
     min_max_m = []
     min_max_p = []
     for res in diff_results:
-        if "p_l" in res and "m" in res and "name_algorithm" in res:
-            labels.append(res["name_algorithm"])
+        if "p_l" in res and "m" in res and "algorithm_name" in res:
+            labels.append(res["algorithm_name"])
 
             p_l = res["p_l"].replace("\n", "").replace("[", "").replace("]", "")
             p_l = np.fromstring(p_l, sep=" ", dtype=float)

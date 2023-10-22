@@ -1,4 +1,4 @@
-from main_algorithm import read, write, DATASET
+from deterministic_algorithm import read, write, DATASET
 from main_functions import *
 
 NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
@@ -26,16 +26,6 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
             k_r = k_rq
             print(f"Find best combination n_t={n_t} k_r={k_r}")
             break
-
-    m = mutual_inductance(
-        coil_1=np.linspace(coil_t[0], coil_t[1], n_t),
-        coil_2=np.linspace(coil_r[0], coil_r[1], k_r),
-        d=distance[0], po=distance[1], fi=distance[2]
-    )
-
-    # # ToDo: make func that adaptation shape
-    # debug(ro=distance[1], m_max=min_max_m[1], m_min=min_max_m[0],
-    #       m=m[0, :, 0], title="Взаимная индуктивность")
 
     return n_t, k_r
 
@@ -191,10 +181,13 @@ def stochastic_optimization_algorithm_1(**kwargs):
     debug(x=po, y_max=m_max, y_min=m_min,
           y=m[0, :, 0], title="Взаимная индуктивность")
 
+    dm_req = np.round((m_max - m_min) / m_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dM="
-          f"{np.round((m_max - m_min) / m_max * 100, 3)} %")
+          f"{dm_req} %")
+
+    dm = np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)
     print(f"The resulting difference in mutual inductance: dM="
-          f"{np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)} %")
+          f"{dm} %")
 
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
@@ -204,20 +197,24 @@ def stochastic_optimization_algorithm_1(**kwargs):
           y=p_l[0, :, 0], title="Выходная мощность",
           x_label="M, Гн", y_label="P, Вт")
 
+    dpl_req = np.round((p_max - p_min) / p_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dP="
-          f"{np.round((p_max - p_min) / p_max * 100, 3)} %")
-    print(f"The resulting difference in mutual inductance: dP="
-          f"{np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)} %")
+          f"{dpl_req} %")
 
-    result = {"name_test": kwargs["name"], "name_algorithm": NAME_ALGORITHM,
+    dpl = np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)
+    print(f"The resulting difference in mutual inductance: dP="
+          f"{dpl} %")
+
+    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
               "power": p, "n": n, "f": f,
               "r_l": r_l, "r_t": r_t, "r_r": r_r,
               "r_turn": r_turn,
-              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t, "c_t": c_t,
-              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r, "c_r": c_r,
-              "m_min": m_min, "m_max": m_max,
-              "p_min": p_min, "p_max": p_max,
-              "m": m[0, :, 0], "p_l": p_l[0, :, 0],
+              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
+              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
+              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+              "m": m[0, :, 0], "dm": dm,
+              "p_l": p_l[0, :, 0], "dpl": dpl,
               "d_min": d_min, "d_max": d_max,
               "po_min": po_min, "po_max": po_max,
               "fi_min": fi_min, "fi_max": fi_max
@@ -231,7 +228,7 @@ def main():
     # an array of geometry optimization results for each test
     res = []
     for data in read(dataset):
-        if data["name"] == "test1":
+        if data["test_name"] == "test1":
             res.append(stochastic_optimization_algorithm_1(**data))
             break
 
