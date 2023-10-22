@@ -1,4 +1,4 @@
-power,n,f,c_t,c_r,r_l,r_t,r_r,r_turn,r_out_r,name,po_min,po_max,d_min,d_max,fi_min,fi_max
+power,n,f,c_t,c_r,r_l,r_t,r_r,r_turn,r_out_r,test_name,po_min,po_max,d_min,d_max,fi_min,fi_max
 10,0.1,0.2e6,15e-9,15e-9,20,3,0,0.0004,0.035,test1,0.0,0.035,0.01,0.01,0,0
 10,0.1,10e6,0.1e9,0.1e9,20,3,0,0.0004,0.035,test2,0.0,0.035,0.01,0.01,0,0
 0.01,0.1,0.2e6,15e-9,15e-9,20,3,0,0.0004,0.035,test3,0.0,0.035,0.01,0.01,0,0
