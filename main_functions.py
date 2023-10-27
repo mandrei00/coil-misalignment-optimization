@@ -254,4 +254,4 @@ def mutation_lb(start, finish, x=None, dr_min=0.001, dr_max=0.025):
     else:
         res = np.random.uniform(low=start if x-dr_min < start else x-dr_min,
                                 high=start if x-dr_max < start else x-dr_max)
-    return np.round(res, 3)
+    return np.round(res, 4)

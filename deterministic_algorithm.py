@@ -15,7 +15,11 @@ def read(csv_filename):
 def write(csv_filename, data):
     if data is []:
         return
-    fields_name = list(data[0].keys())
+    try:
+        fields_name = list(data[0].keys())
+    except Exception as err:
+        print(f"Error {err}")
+        return
     with open(csv_filename, "w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fields_name)
         writer.writeheader()
