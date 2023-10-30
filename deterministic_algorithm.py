@@ -69,6 +69,7 @@ def coil_optimization_algorithm(**kwargs):
     # Step 3. Calculation of N and K.
     print("Running step 3.")
     r_in_t = r_out_t = r_in_r = r_out_r
+    l_n = self_inductance_turn(r_out_t, r_turn)
     n_t = int(np.ceil(np.sqrt(l_t / self_inductance_turn(r_out_t, r_turn))))
     k_r = int(np.ceil(np.sqrt(l_r / self_inductance_turn(r_out_r, r_turn))))
 
@@ -99,6 +100,7 @@ def coil_optimization_algorithm(**kwargs):
                                      distance=(d, po, fi),
                                      range_m=(m_min, m_max))
     r_in_t = r_in_r
+    с = 1
 
     # Step 7. Calculation of Mcalcmin and Mcalcmax.
     print("Running step 7.")
@@ -125,7 +127,7 @@ def coil_optimization_algorithm(**kwargs):
                                                        coil_r=(r_in_r, r_out_r, k_r),
                                                        distance=(d, po, fi),
                                                        range_m=(m_min, m_max))
-
+        c = 1
         # Step 9. Calculation of R outT.
         print("Running step 9.")
         r_out_t = calculation_r_out_t(coil_t=(r_in_t, r_out_t_max, n_t),
@@ -237,9 +239,9 @@ def main():
     # an array of geometry optimization results for each test
     res = []
     for data in read(DATASET):
-        if data["test_name"] == "test1":
-            res.append(coil_optimization_algorithm(**data))
-            break
+        # if data["test_name"] == "test8":
+        #     res.append(coil_optimization_algorithm(**data))
+        res.append(coil_optimization_algorithm(**data))
 
     # save result of geometry optimization for each test
     result = "result/deterministic_algorithm_result.csv"
