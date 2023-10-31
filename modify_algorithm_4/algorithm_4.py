@@ -19,11 +19,11 @@ def generate_coil(r_in, r_out, n, r_turn):
 
     # check the distribution of turns
     for i in range(1, n - 1):
-        if (coil[i] + r_turn < coil[i + 1] - r_turn
-            or coil[i] - r_turn > coil[i - 1] + r_turn)\
-                and coil[i] != coil[i + 1] and coil[i] != coil[i - 1]:
+        if coil[i] + r_turn < coil[i + 1] - r_turn and coil[i] - r_turn > coil[i - 1] + r_turn and coil[i] != coil[i + 1] and coil[i] != coil[i - 1]:
             new_coil = np.append(new_coil, coil[i])
 
+    new_coil = np.append(new_coil, r_out)
+    new_coil = np.array(list(set(new_coil)))
     new_coil = np.sort(new_coil)
 
     return new_coil.copy()
@@ -76,12 +76,14 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
     )
 
     iterations = 1000
+    flag = False
     for _ in range(iterations):
 
         if np.max(m_q) < min_max_m[1] and np.min(m_q) > min_max_m[0]:
             coil_tn = coil_tq.copy()
             coil_rn = coil_rq.copy()
             print(f"Find best combination coil_t={coil_tn}, coil_r={coil_rn}")
+            flag = True
             break
 
         # mutate the transmitting coil
@@ -127,8 +129,9 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
         coil_tn = coil_tq.copy()
         coil_rn = coil_rq.copy()
         print(f"Find best combination coil_t={coil_tn}, coil_r={coil_rn}")
+        flag = True
 
-    return coil_tn, coil_rn
+    return flag, coil_tn, coil_rn
 
 
 def stochastic_optimization_algorithm_4(**kwargs):
@@ -212,7 +215,7 @@ def stochastic_optimization_algorithm_4(**kwargs):
                                                distance=(d, po, fi),
                                                range_m=(m_min, m_max))
 
-    coil_t, coil_r = hill_climbing(
+    flag, coil_t, coil_r = hill_climbing(
         coil_t=(r_in_t, r_out_t_max, n_t, r_turn),
         coil_r=(r_in_r, r_out_r, k_r, r_turn),
         distance=(d, po, fi),
@@ -270,36 +273,53 @@ def stochastic_optimization_algorithm_4(**kwargs):
     print(f"The resulting difference in mutual inductance: dP="
           f"{dpl} %")
 
-    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-              "power": p, "n": n, "f": f,
-              "r_l": r_l, "r_t": r_t, "r_r": r_r,
-              "r_turn": r_turn,
-              "coil_t": (coil_t, len(coil_t)), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
-              "coil_r": (coil_r, len(coil_r)), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
-              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-              "m": m[0, :, 0], "dm": dm,
-              "p_l": p_l[0, :, 0], "dpl": dpl,
-              "d_min": d_min, "d_max": d_max,
-              "po_min": po_min, "po_max": po_max,
-              "fi_min": fi_min, "fi_max": fi_max
-              }
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
+        "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "m": m[0, :, 0], "dm": dm,
+        "p_l": p_l[0, :, 0], "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
     return result
 
 
-def main():
+def run_all_test():
     dataset = "../" + DATASET
-
     # an array of geometry optimization results for each test
     res = []
     for data in read(dataset):
-        if data["test_name"] == "test1":
-            res.append(stochastic_optimization_algorithm_4(**data))
-            break
+        print("Running test " + data["test_name"])
+        res.append(stochastic_optimization_algorithm_4(**data))
 
     # save result of geometry optimization for each test
     result = f"../result/algorithm_4_result.csv"
     write(result, res)
+
+
+def run_test(test_name):
+    dataset = "../" + DATASET
+    # an array of geometry optimization results for each test
+    res = []
+    for data in read(dataset):
+        if data["test_name"] == test_name:
+            res.append(stochastic_optimization_algorithm_4(**data))
+
+    # save result of geometry optimization for each test
+    result = f"../result/algorithm_4_result.csv"
+    write(result, res)
+
+
+def main():
+    run_all_test()
 
 
 if __name__ == "__main__":

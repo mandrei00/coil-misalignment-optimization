@@ -62,7 +62,7 @@ def plot_coil(coil, title=None):
 
 def main():
     diff_results = []
-    name_set = "test1"
+    name_set = "test8"
 
     for res in RESULTS:
         diff_results.append(read_result(
@@ -86,26 +86,26 @@ def main():
             min_max_p.append(float(res["p_max"]))
 
             # plot transmitting coil
-            coil_t = res["coil_t"]
-            if "[" in coil_t:
-                coil_t = coil_t[coil_t.find("[") + 1:coil_t.find("]")]
-                coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
-            else:
-                coil_t = coil_t.replace("(", "").replace(")", "")
-                coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
-                coil_t = np.linspace(coil_t[0], coil_t[1], int(coil_t[2]))
-            plot_coil(coil=coil_t, title="Передающая катушка")
+            # coil_t = res["coil_t"]
+            # if "[" in coil_t:
+            #     coil_t = coil_t[coil_t.find("[") + 1:coil_t.find("]")]
+            #     coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
+            # else:
+            #     coil_t = coil_t.replace("(", "").replace(")", "")
+            #     coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
+            #     coil_t = np.linspace(coil_t[0], coil_t[1], int(coil_t[2]))
+            # plot_coil(coil=coil_t, title="Передающая катушка")
 
             # plot coil receiving
-            coil_t = res["coil_r"]
-            if "[" in coil_t:
-                coil_t = coil_t[coil_t.find("[") + 1:coil_t.find("]")]
-                coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
-            else:
-                coil_t = coil_t.replace("(", "").replace(")", "")
-                coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
-                coil_t = np.linspace(coil_t[0], coil_t[1], int(coil_t[2]))
-            plot_coil(coil=coil_t, title="Принимающая катушка")
+            # coil_t = res["coil_r"]
+            # if "[" in coil_t:
+            #     coil_t = coil_t[coil_t.find("[") + 1:coil_t.find("]")]
+            #     coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
+            # else:
+            #     coil_t = coil_t.replace("(", "").replace(")", "")
+            #     coil_t = np.fromstring(coil_t, sep=", ", dtype=float)
+            #     coil_t = np.linspace(coil_t[0], coil_t[1], int(coil_t[2]))
+            # plot_coil(coil=coil_t, title="Принимающая катушка")
 
             m = res["m"].replace("\n", "").replace("[", "").replace("]", "")
             m = np.fromstring(m, sep=" ", dtype=float)

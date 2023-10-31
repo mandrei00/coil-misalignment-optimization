@@ -6,6 +6,7 @@ import csv
 DATASET = "dataset/dataset.csv"
 NAME_ALGORITHM = "Детерминированный алгоритм"
 
+
 def read(csv_filename):
     with open(csv_filename, "r") as file:
         data = list(csv.DictReader(file))
@@ -69,7 +70,6 @@ def coil_optimization_algorithm(**kwargs):
     # Step 3. Calculation of N and K.
     print("Running step 3.")
     r_in_t = r_out_t = r_in_r = r_out_r
-    l_n = self_inductance_turn(r_out_t, r_turn)
     n_t = int(np.ceil(np.sqrt(l_t / self_inductance_turn(r_out_t, r_turn))))
     k_r = int(np.ceil(np.sqrt(l_r / self_inductance_turn(r_out_r, r_turn))))
 
@@ -218,34 +218,52 @@ def coil_optimization_algorithm(**kwargs):
     print(f"The resulting difference in mutual inductance: dP="
           f"{dpl} %")
 
-    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-              "power": p, "n": n, "f": f,
-              "r_l": r_l, "r_t": r_t, "r_r": r_r,
-              "r_turn": r_turn,
-              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
-              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
-              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-              "m": m[0, :, 0], "dm": dm,
-              "p_l": p_l[0, :, 0], "dpl": dpl,
-              "d_min": d_min, "d_max": d_max,
-              "po_min": po_min, "po_max": po_max,
-              "fi_min": fi_min, "fi_max": fi_max
-              }
+    flag = True
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
+        "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "m": m[0, :, 0], "dm": dm,
+        "p_l": p_l[0, :, 0], "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
     return result
 
 
-def main():
-    # an array of geometry optimization results for each test
+def run_all_test():
     res = []
+
     for data in read(DATASET):
-        # if data["test_name"] == "test8":
-        #     res.append(coil_optimization_algorithm(**data))
+        print("Running test " + data["test_name"])
         res.append(coil_optimization_algorithm(**data))
 
     # save result of geometry optimization for each test
     result = "result/deterministic_algorithm_result.csv"
     write(result, res)
+
+
+def run_test(test_name):
+    # an array of geometry optimization results for each test
+    res = []
+    for data in read(DATASET):
+        if data["test_name"] == test_name:
+            res.append(coil_optimization_algorithm(**data))
+
+    # save result of geometry optimization for each test
+    result = "result/deterministic_algorithm_result.csv"
+    write(result, res)
+
+
+def main():
+    run_all_test()
 
 
 if __name__ == "__main__":

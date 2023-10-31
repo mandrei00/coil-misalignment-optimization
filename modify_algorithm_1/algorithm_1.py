@@ -3,17 +3,19 @@ from main_functions import *
 
 NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
 
+
 def hill_climbing(coil_t, coil_r, distance, min_max_m):
     n_t_max = int((coil_t[1] - coil_t[0]) / (2 * coil_t[3]) + 1)
     k_r_max = int((coil_r[1] - coil_r[0]) / (2 * coil_r[3]) + 1)
 
     n_t, k_r = coil_t[2], coil_r[2]
 
-    iterations = 1000
+    iterations = 500
+    flag = False
     for _ in range(iterations):
 
-        n_tq = np.random.randint(2, n_t_max)
-        k_rq = np.random.randint(2, k_r_max)
+        n_tq = np.random.randint(2,  3 if n_t_max <= 2 else n_t_max)
+        k_rq = np.random.randint(2, 3 if k_r_max <= 2 else k_r_max)
 
         m_q = mutual_inductance(
             coil_1=np.linspace(coil_t[0], coil_t[1], n_tq),
@@ -25,9 +27,10 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
             n_t = n_tq
             k_r = k_rq
             print(f"Find best combination n_t={n_t} k_r={k_r}")
+            flag = True
             break
 
-    return n_t, k_r
+    return flag, n_t, k_r
 
 
 def stochastic_optimization_algorithm_1(**kwargs):
@@ -145,7 +148,7 @@ def stochastic_optimization_algorithm_1(**kwargs):
 
     # Step 11. Run hill climbing for search the best combination count of the turn coil
     print("Running step 11.\n")
-    n_t, k_r = hill_climbing(
+    flag, n_t, k_r = hill_climbing(
         coil_t=(r_in_t, r_out_t, n_t, r_turn),
         coil_r=(r_in_t, r_out_r, k_r, r_turn),
         distance=(d, po, fi),
@@ -205,36 +208,53 @@ def stochastic_optimization_algorithm_1(**kwargs):
     print(f"The resulting difference in mutual inductance: dP="
           f"{dpl} %")
 
-    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-              "power": p, "n": n, "f": f,
-              "r_l": r_l, "r_t": r_t, "r_r": r_r,
-              "r_turn": r_turn,
-              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
-              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
-              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-              "m": m[0, :, 0], "dm": dm,
-              "p_l": p_l[0, :, 0], "dpl": dpl,
-              "d_min": d_min, "d_max": d_max,
-              "po_min": po_min, "po_max": po_max,
-              "fi_min": fi_min, "fi_max": fi_max
-              }
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
+        "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "m": m[0, :, 0], "dm": dm,
+        "p_l": p_l[0, :, 0], "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
     return result
 
 
-def main():
+def run_all_test():
     dataset = "../" + DATASET
-
     # an array of geometry optimization results for each test
     res = []
     for data in read(dataset):
-        if data["test_name"] == "test1":
-            res.append(stochastic_optimization_algorithm_1(**data))
-            break
+        print("Running test " + data["test_name"])
+        res.append(stochastic_optimization_algorithm_1(**data))
 
     # save result of geometry optimization for each test
     result = f"../result/algorithm_1_result.csv"
     write(result, res)
+
+
+def run_test(test_name):
+    dataset = "../" + DATASET
+    # an array of geometry optimization results for each test
+    res = []
+    for data in read(dataset):
+        if data["test_name"] == test_name:
+            res.append(stochastic_optimization_algorithm_1(**data))
+
+    # save result of geometry optimization for each test
+    result = f"../result/algorithm_1_result.csv"
+    write(result, res)
+
+
+def main():
+    run_all_test()
 
 
 if __name__ == "__main__":
