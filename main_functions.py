@@ -99,17 +99,6 @@ def self_inductance_coil(coil, r_turn, N=60, K=60):
 
 
 def coupling_coefficient(coil_1, r1_turn, coil_2, r2_turn, d, po, fi):
-    """
-    Function for calculating the coupling coefficient between inductors.
-    :param coil_1:
-    :param r1_turn:
-    :param coil_2:
-    :param r2_turn:
-    :param d:
-    :param po:
-    :param fi:
-    :return:
-    """
     l_1 = self_inductance_coil(coil_1, r1_turn)
     l_2 = self_inductance_coil(coil_2, r2_turn)
     m = mutual_inductance(coil_1, coil_2, d, po, fi)
@@ -230,18 +219,17 @@ def calculation_r_out_t(coil_t, coil_r,
     return x0
 
 
-def debug(x, y, y_max=None, y_min=None, title=None, x_label="ro, м", y_label="M, Гн"):
+def debug(x, y, y_max=None, y_min=None, title=None, x_label="po, м", y_label="M, Гн"):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     if y_max is not None and y_min is not None:
         plt.plot(x, y_max * np.ones(x.shape), "k--", )
         plt.plot(x, y_min * np.ones(x.shape), "k--", )
     if y is not None:
-        plt.plot(x, y, label="Оптимизированный случай")
+        plt.plot(x, y)
     plt.grid()
     if title is not None:
         plt.title(title)
-    plt.legend(loc="best")
     plt.show()
 
 

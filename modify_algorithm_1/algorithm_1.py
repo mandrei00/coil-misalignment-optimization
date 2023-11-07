@@ -1,19 +1,23 @@
 from deterministic_algorithm import read, write, DATASET
 from main_functions import *
 
-NAME_ALGORITHM = "Алгоритм 1 (изменяется кол-во витков)"
+NAME_ALGORITHM = "Algorithm 1"
+
 
 def hill_climbing(coil_t, coil_r, distance, min_max_m):
+    print("Running hill climbing algorithm...")
+
     n_t_max = int((coil_t[1] - coil_t[0]) / (2 * coil_t[3]) + 1)
     k_r_max = int((coil_r[1] - coil_r[0]) / (2 * coil_r[3]) + 1)
 
     n_t, k_r = coil_t[2], coil_r[2]
 
-    iterations = 1000
+    iterations = 500
+    flag = False
     for _ in range(iterations):
 
-        n_tq = np.random.randint(2, n_t_max)
-        k_rq = np.random.randint(2, k_r_max)
+        n_tq = np.random.randint(2,  3 if n_t_max <= 2 else n_t_max)
+        k_rq = np.random.randint(2, 3 if k_r_max <= 2 else k_r_max)
 
         m_q = mutual_inductance(
             coil_1=np.linspace(coil_t[0], coil_t[1], n_tq),
@@ -25,9 +29,10 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
             n_t = n_tq
             k_r = k_rq
             print(f"Find best combination n_t={n_t} k_r={k_r}")
+            flag = True
             break
 
-    return n_t, k_r
+    return flag, n_t, k_r
 
 
 def stochastic_optimization_algorithm_1(**kwargs):
@@ -145,41 +150,60 @@ def stochastic_optimization_algorithm_1(**kwargs):
 
     # Step 11. Run hill climbing for search the best combination count of the turn coil
     print("Running step 11.\n")
-    n_t, k_r = hill_climbing(
+    flag, n_t, k_r = hill_climbing(
         coil_t=(r_in_t, r_out_t, n_t, r_turn),
         coil_r=(r_in_t, r_out_r, k_r, r_turn),
         distance=(d, po, fi),
         min_max_m=(m_min, m_max)
     )
 
-    # Step 12. Recalculation of L_t, L_r and C_t, C_r
-    print("Running step 12.")
-    l_t = self_inductance_coil(np.linspace(r_in_t, r_out_t, n_t), r_turn)
+    # Step 12. Recalculation of L, C, Q
+    print("Running step 12.\n")
+
+    # ToDo: add round for radius coil
+    coil_t = np.linspace(r_in_t, r_out_t, n_t)
+    coil_r = np.linspace(r_in_r, r_out_r, k_r)
+
+    l_t = self_inductance_coil(coil_t, r_turn)
     c_t = 1 / (w ** 2 * l_t)
+    q_t = quality_factor(r_t, l_t, c_t)
+    print(f"Transmitting part:\n r in_t={coil_t[0] * 1e3} мм"
+          f"                  \n r out_t={coil_t[-1] * 1e3} мм"
+          f"                  \n Nt={len(coil_t)}",
+          f"                  \n Lt={l_t * 1e6} мкГн",
+          f"                  \n Ct={c_t * 1e9} нФ"
+          f"                  \n Qt={q_t}\n")
 
-    l_r = self_inductance_coil(np.linspace(r_in_r, r_out_r, k_r), r_turn)
+    l_r = self_inductance_coil(coil_r, r_turn)
     c_r = 1 / (w ** 2 * l_r)
+    q_r = quality_factor(r_t + r_r, l_r, c_r)
+    print(f"Receiving part:\n r in_r={coil_r[0] * 1e3} мм"
+          f"               \n r out_r={coil_r[-1] * 1e3} мм"
+          f"               \n Kr={len(coil_r)}"
+          f"               \n Lr={l_r * 1e6} мкГн",
+          f"               \n Cr={c_r * 1e9} нФ"
+          f"               \n Qr={q_r}\n")
 
-    m = mutual_inductance(
-        coil_1=np.linspace(r_in_r, r_out_r, k_r),
-        coil_2=np.linspace(r_in_t, r_out_t, n_t),
+    k = coupling_coefficient(
+        coil_1=coil_t, r1_turn=r_turn,
+        coil_2=coil_r, r2_turn=r_turn,
         d=d, po=po, fi=fi
     )
 
-    print(f"Transmitting part:\n r in_t={r_in_t * 1e3} мм"
-          f"                  \n r out_t={r_out_t * 1e3} мм"
-          f"                  \n Nt={n_t}",
-          f"                  \n Lt={l_t * 1e6} мкГн",
-          f"                  \n Ct={c_t * 1e9} нФ\n")
+    # show plot coupling coefficient
+    debug(x=po, y=k[0, :, 0],
+          y_label="k",
+          title="Коэффициент связи")
 
-    print(f"Receiving part:\n r in_r={r_in_r * 1e3} мм"
-          f"               \n r out_r={r_out_r * 1e3} мм"
-          f"               \n Kr={k_r}"
-          f"               \n Lr={l_r * 1e6} мкГн",
-          f"               \n Cr={c_r * 1e9} нФ\n")
+    dk = np.round((np.max(k) - np.min(k)) / np.max(k) * 100, 3)
+    print(f"The resulting difference in coupling coefficient: dk="
+          f"{dk} %\n")
 
-    debug(x=po, y_max=m_max, y_min=m_min,
-          y=m[0, :, 0], title="Взаимная индуктивность")
+    m = mutual_inductance(
+        coil_1=coil_t,
+        coil_2=coil_r,
+        d=d, po=po, fi=fi
+    )
 
     dm_req = np.round((m_max - m_min) / m_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dM="
@@ -187,15 +211,15 @@ def stochastic_optimization_algorithm_1(**kwargs):
 
     dm = np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)
     print(f"The resulting difference in mutual inductance: dM="
-          f"{dm} %")
+          f"{dm} %\n")
+
+    # show plot mutual inductance
+    debug(x=po, y_max=m_max, y_min=m_min,
+          y=m[0, :, 0], title="Взаимная индуктивность")
 
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
-
-    debug(x=m[0, :, 0], y_max=p_max, y_min=p_min,
-          y=p_l[0, :, 0], title="Выходная мощность",
-          x_label="M, Гн", y_label="P, Вт")
 
     dpl_req = np.round((p_max - p_min) / p_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dP="
@@ -203,38 +227,62 @@ def stochastic_optimization_algorithm_1(**kwargs):
 
     dpl = np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)
     print(f"The resulting difference in mutual inductance: dP="
-          f"{dpl} %")
+          f"{dpl} %\n")
 
-    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-              "power": p, "n": n, "f": f,
-              "r_l": r_l, "r_t": r_t, "r_r": r_r,
-              "r_turn": r_turn,
-              "coil_t": (r_in_t, r_out_t, n_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
-              "coil_r": (r_in_r, r_out_r, k_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
-              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-              "m": m[0, :, 0], "dm": dm,
-              "p_l": p_l[0, :, 0], "dpl": dpl,
-              "d_min": d_min, "d_max": d_max,
-              "po_min": po_min, "po_max": po_max,
-              "fi_min": fi_min, "fi_max": fi_max
-              }
+    # show plot output power
+    debug(x=po, y_max=p_max, y_min=p_min,
+          y=p_l[0, :, 0], title="Выходная мощность",
+          x_label="M, Гн", y_label="P, Вт")
+
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": list(coil_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9, "q_t": q_t,
+        "coil_r": list(coil_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9, "q_r": q_r,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "k": list(k[0, :, 0]), "dk": dk,
+        "m": list(m[0, :, 0]), "dm": dm,
+        "p_l": list(p_l[0, :, 0]), "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
     return result
 
 
-def main():
+def run_all_test():
     dataset = "../" + DATASET
-
     # an array of geometry optimization results for each test
     res = []
     for data in read(dataset):
-        if data["test_name"] == "test1":
-            res.append(stochastic_optimization_algorithm_1(**data))
-            break
+        print("Running test " + data["test_name"])
+        res.append(stochastic_optimization_algorithm_1(**data))
 
     # save result of geometry optimization for each test
     result = f"../result/algorithm_1_result.csv"
     write(result, res)
+
+
+def run_test(test_name):
+    dataset = "../" + DATASET
+    # an array of geometry optimization results for each test
+    res = []
+    for data in read(dataset):
+        if data["test_name"] == test_name:
+            res.append(stochastic_optimization_algorithm_1(**data))
+
+    # save result of geometry optimization for each test
+    result = f"../result/algorithm_1_result.csv"
+    write(result, res)
+
+
+def main():
+    # run_all_test()
+    run_test("test1")
 
 
 if __name__ == "__main__":

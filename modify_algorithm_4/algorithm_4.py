@@ -2,7 +2,7 @@ import numpy as np
 
 from deterministic_algorithm import *
 
-NAME_ALGORITHM = "Алгоритм 4 (изменяется кол-во витков, расстояние между витками и внутренние радиусы)"
+NAME_ALGORITHM = "Algorithm 4"
 
 
 def generate_coil(r_in, r_out, n, r_turn):
@@ -19,22 +19,21 @@ def generate_coil(r_in, r_out, n, r_turn):
 
     # check the distribution of turns
     for i in range(1, n - 1):
-        if (coil[i] + r_turn < coil[i + 1] - r_turn
-            or coil[i] - r_turn > coil[i - 1] + r_turn)\
-                and coil[i] != coil[i + 1] and coil[i] != coil[i - 1]:
+        if coil[i] + r_turn < coil[i + 1] - r_turn and coil[i] - r_turn > coil[i - 1] + r_turn and coil[i] != coil[i + 1] and coil[i] != coil[i - 1]:
             new_coil = np.append(new_coil, coil[i])
 
+    new_coil = np.append(new_coil, r_out)
+    new_coil = np.array(list(set(new_coil)))
     new_coil = np.sort(new_coil)
 
     return new_coil.copy()
 
 
 def hill_climbing(coil_t, coil_r, distance, min_max_m):
+    print("Running hill climbing algorithm...")
 
     coil_tn = np.linspace(coil_t[0], coil_t[1], coil_t[2])
     coil_rn = np.linspace(coil_r[0], coil_r[1], coil_r[2])
-
-    print("Running hill climbing algorithm...")
 
     # mutate the transmitting coil
     r_out_tq = mutation_lb(
@@ -76,12 +75,14 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
     )
 
     iterations = 1000
+    flag = False
     for _ in range(iterations):
 
         if np.max(m_q) < min_max_m[1] and np.min(m_q) > min_max_m[0]:
             coil_tn = coil_tq.copy()
             coil_rn = coil_rq.copy()
             print(f"Find best combination coil_t={coil_tn}, coil_r={coil_rn}")
+            flag = True
             break
 
         # mutate the transmitting coil
@@ -127,8 +128,9 @@ def hill_climbing(coil_t, coil_r, distance, min_max_m):
         coil_tn = coil_tq.copy()
         coil_rn = coil_rq.copy()
         print(f"Find best combination coil_t={coil_tn}, coil_r={coil_rn}")
+        flag = True
 
-    return coil_tn, coil_rn
+    return flag, coil_tn, coil_rn
 
 
 def stochastic_optimization_algorithm_4(**kwargs):
@@ -212,20 +214,48 @@ def stochastic_optimization_algorithm_4(**kwargs):
                                                distance=(d, po, fi),
                                                range_m=(m_min, m_max))
 
-    coil_t, coil_r = hill_climbing(
+    flag, coil_t, coil_r = hill_climbing(
         coil_t=(r_in_t, r_out_t_max, n_t, r_turn),
         coil_r=(r_in_r, r_out_r, k_r, r_turn),
         distance=(d, po, fi),
         min_max_m=(m_min, m_max)
     )
 
-    # Step 11. Recalculation of L_t, L_r and C_t, C_r
-    print("Running step 11.")
+    # Step 8. Recalculation of L, C, Q
+    print("Running step 8.")
+
     l_t = self_inductance_coil(coil_t, r_turn)
     c_t = 1 / (w ** 2 * l_t)
+    q_t = quality_factor(r_t, l_t, c_t)
+    print(f"Transmitting part:\n coil_t={coil_t * 1e3} мм"
+          f"                  \n Nt={len(coil_t)}",
+          f"                  \n Lt={l_t * 1e6} мкГн",
+          f"                  \n Ct={c_t * 1e9} нФ"
+          f"                  \n Qt={q_t}\n")
 
     l_r = self_inductance_coil(coil_r, r_turn)
     c_r = 1 / (w ** 2 * l_r)
+    q_r = quality_factor(r_t + r_r, l_r, c_r)
+    print(f"Receiving part:\n coil_r={coil_r * 1e3} мм"
+          f"               \n Kr={len(coil_r)}"
+          f"               \n Lr={l_r * 1e6} мкГн",
+          f"               \n Cr={c_r * 1e9} нФ"
+          f"               \n Qr={q_r}\n")
+
+    k = coupling_coefficient(
+        coil_1=coil_t, r1_turn=r_turn,
+        coil_2=coil_r, r2_turn=r_turn,
+        d=d, po=po, fi=fi
+    )
+
+    # show plot coupling coefficient
+    debug(x=po, y=k[0, :, 0],
+          y_label="k",
+          title="Коэффициент связи")
+
+    dk = np.round((np.max(k) - np.min(k)) / np.max(k) * 100, 3)
+    print(f"The resulting difference in coupling coefficient: dk="
+          f"{dk} %\n")
 
     m = mutual_inductance(
         coil_1=coil_t,
@@ -233,34 +263,21 @@ def stochastic_optimization_algorithm_4(**kwargs):
         d=d, po=po, fi=fi
     )
 
-    print(f"Transmitting part:\n coil_t={coil_t * 1e3} мм"
-          f"                  \n Nt={len(coil_t)}",
-          f"                  \n Lt={l_t * 1e6} мкГн",
-          f"                  \n Ct={c_t * 1e9} нФ\n")
-
-    print(f"Receiving part:\n coil_r={coil_r * 1e3} мм"
-          f"               \n Kr={len(coil_r)}"
-          f"               \n Lr={l_r * 1e6} мкГн",
-          f"               \n Cr={c_r * 1e9} нФ\n")
-
-    debug(x=po, y_max=m_max, y_min=m_min,
-          y=m[0, :, 0], title="Взаимная индуктивность")
-
     dm_req = np.round((m_max - m_min) / m_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dM="
           f"{dm_req} %")
 
     dm = np.round((np.max(m) - np.min(m)) / np.max(m) * 100, 3)
     print(f"The resulting difference in mutual inductance: dM="
-          f"{dm} %")
+          f"{dm} %\n")
+
+    # show plot mutual inductance
+    debug(x=po, y_max=m_max, y_min=m_min,
+          y=m[0, :, 0], title="Взаимная индуктивность")
 
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
-
-    debug(x=m[0, :, 0], y_max=p_max, y_min=p_min,
-          y=p_l[0, :, 0], title="Выходная мощность",
-          x_label="M, Гн", y_label="P, Вт")
 
     dpl_req = np.round((p_max - p_min) / p_max * 100, 3)
     print(f"Permissible difference in mutual inductance: dP="
@@ -268,38 +285,62 @@ def stochastic_optimization_algorithm_4(**kwargs):
 
     dpl = np.round((np.max(p_l) - np.min(p_l)) / np.max(p_l) * 100, 3)
     print(f"The resulting difference in mutual inductance: dP="
-          f"{dpl} %")
+          f"{dpl} %\n")
 
-    result = {"test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-              "power": p, "n": n, "f": f,
-              "r_l": r_l, "r_t": r_t, "r_r": r_r,
-              "r_turn": r_turn,
-              "coil_t": (coil_t, len(coil_t)), "l_t": l_t * 1e6, "c_t": c_t * 1e9,
-              "coil_r": (coil_r, len(coil_r)), "l_r": l_r * 1e6, "c_r": c_r * 1e9,
-              "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-              "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-              "m": m[0, :, 0], "dm": dm,
-              "p_l": p_l[0, :, 0], "dpl": dpl,
-              "d_min": d_min, "d_max": d_max,
-              "po_min": po_min, "po_max": po_max,
-              "fi_min": fi_min, "fi_max": fi_max
-              }
+    # show plot output power
+    debug(x=po, y_max=p_max, y_min=p_min,
+          y=p_l[0, :, 0], title="Выходная мощность",
+          x_label="M, Гн", y_label="P, Вт")
+
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": list(coil_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9, "q_t": q_t,
+        "coil_r": list(coil_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9, "q_r": q_r,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "k": list(k[0, :, 0]), "dk": dk,
+        "m": list(m[0, :, 0]), "dm": dm,
+        "p_l": list(p_l[0, :, 0]), "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
     return result
 
 
-def main():
+def run_all_test():
     dataset = "../" + DATASET
-
     # an array of geometry optimization results for each test
     res = []
     for data in read(dataset):
-        if data["test_name"] == "test1":
-            res.append(stochastic_optimization_algorithm_4(**data))
-            break
+        print("Running test " + data["test_name"])
+        res.append(stochastic_optimization_algorithm_4(**data))
 
     # save result of geometry optimization for each test
     result = f"../result/algorithm_4_result.csv"
     write(result, res)
+
+
+def run_test(test_name):
+    dataset = "../" + DATASET
+    # an array of geometry optimization results for each test
+    res = []
+    for data in read(dataset):
+        if data["test_name"] == test_name:
+            res.append(stochastic_optimization_algorithm_4(**data))
+
+    # save result of geometry optimization for each test
+    result = f"../result/algorithm_4_result.csv"
+    write(result, res)
+
+
+def main():
+    run_all_test()
+    # run_test(test_name="test1")
 
 
 if __name__ == "__main__":
