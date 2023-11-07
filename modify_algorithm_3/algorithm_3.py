@@ -307,8 +307,8 @@ def run_test(test_name):
 
 
 def main():
-    # run_all_test()
-    run_test(test_name="test1")
+    run_all_test()
+    # run_test(test_name="test1")
 
 
 if __name__ == "__main__":
