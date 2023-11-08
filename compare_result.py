@@ -108,7 +108,6 @@ def show_table_system(name_csv_file, indices, name_excel_file=None):
     # print(info[indices])
 
 
-
 def main():
     diff_results = []
     name_set = "test4"
