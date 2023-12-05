@@ -8,7 +8,7 @@ import numpy as np
 RESULTS = [
     # "result/algorithm_1_result.csv",
     # "result/algorithm_2_result.csv",
-    "result/algorithm_3_result.csv",
+    # "result/algorithm_3_result.csv",
     "result/algorithm_4_result.csv",
     "result/deterministic_algorithm_result.csv"
 ]
@@ -110,7 +110,7 @@ def show_table_system(name_csv_file, indices, name_excel_file=None):
 
 def main():
     diff_results = []
-    name_set = "test4"
+    name_set = "test2"
 
     for res in RESULTS:
         diff_results.append(read_result(
@@ -163,42 +163,41 @@ def main():
             # get lateral misalignment
             po = np.linspace(float(res["po_min"]), float(res["po_max"]), len(power[-1]))
 
-            # plot transmitting coil
-            coil_t = np.fromstring(res["coil_t"][1:-1], sep=", ", dtype=float)
-            plot_coil(
-                coil=coil_t,
-                # title="Передающая катушка",
-                fig_name=rf"graphics\{labels[-1]}_transmitting_coil"
-            )
-
-            # plot coil receiving
-            coil_r = np.fromstring(res["coil_r"][1:-1], sep=", ", dtype=float)
-            plot_coil(
-                coil=coil_r,
-                # title="Принимающая катушка",
-                fig_name=rf"graphics\{labels[-1]}_receiving_coil"
-            )
+            # # plot transmitting coil
+            # coil_t = np.fromstring(res["coil_t"][1:-1], sep=", ", dtype=float)
+            # plot_coil(
+            #     coil=coil_t,
+            #     # title="Передающая катушка",
+            #     fig_name=rf"graphics\{labels[-1]}_transmitting_coil"
+            # )
+            # # plot coil receiving
+            # coil_r = np.fromstring(res["coil_r"][1:-1], sep=", ", dtype=float)
+            # plot_coil(
+            #     coil=coil_r,
+            #     # title="Принимающая катушка",
+            #     fig_name=rf"graphics\{labels[-1]}_receiving_coil"
+            # )
 
     plot_diff(
-        x=po, ys=mutual_inductance,
+        x=po * 1e3, ys=mutual_inductance,
         # labels=labels,
         y_min=min_max_m[0], y_max=min_max_m[1],
-        x_label="ρ, м", y_label="M, Гн",
+        x_label="ρ, мм", y_label="M, Гн",
         title="Сравнение распределения взаимной индуктивности\n для оптимизированных геометрий"
     )
 
     plot_diff(
-        x=po, ys=power,
+        x=po * 1e3, ys=power,
         # labels=labels,
         y_min=min_max_p[0], y_max=min_max_p[1],
-        x_label="ρ, м", y_label="P, Вт",
-        title="Сравнение распределения выходной мощности\n для оптимизированных геометрий"
+        x_label="ρ, мм", y_label="P, Вт",
+        # title="Сравнение распределения выходной мощности\n для оптимизированных геометрий"
     )
 
     plot_diff(
-        x=po, ys=couple_coefficient,
+        x=po * 1e3, ys=couple_coefficient,
         # labels=labels,
-        x_label="ρ, м", y_label="k",
+        x_label="ρ, мм", y_label="k",
         title="Сравнение распределения коэффициента связи\n для оптимизированных геометрий"
     )
 
