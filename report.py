@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from compare_result import *
@@ -5,9 +6,9 @@ from compare_result import *
 RESULTS = [
     # "result/algorithm_1_result.csv",
     # "result/algorithm_2_result.csv",
-    "result/algorithm_3_result.csv",
-    "result/algorithm_4_result.csv",
-    "result/deterministic_algorithm_result.csv"
+    ("result/algorithm_3_result.csv", "blue"),
+    ("result/algorithm_4_result.csv", "orange"),
+    ("result/deterministic_algorithm_result.csv", "green")
 ]
 
 
@@ -63,7 +64,6 @@ def make_column(indices, data):
 
 
 def test_result_table(name_test, data, transmitting_part=True, receiving_part=True):
-
     ind_column = []
 
     table_transmit = np.array([])
@@ -71,7 +71,7 @@ def test_result_table(name_test, data, transmitting_part=True, receiving_part=Tr
     for d in data:
 
         res = read_result(
-            name_file=d, name_set=name_test
+            name_file=d[0], name_set=name_test
         )
 
         ind_column.append(res["algorithm_name"])
@@ -111,8 +111,6 @@ def test_result_table(name_test, data, transmitting_part=True, receiving_part=Tr
                 writer, sheet_name="transmitting part"
             )
 
-        print(table_receive)
-
         if receiving_part:
             pd.DataFrame(
                 table_receive,
@@ -125,9 +123,70 @@ def test_result_table(name_test, data, transmitting_part=True, receiving_part=Tr
     return table_transmit, table_receive
 
 
+def draw_two_coil(coil_1, coil_2, color=None, title=None, name_fig=None):
+    if title is not None:
+        plt.title(title)
+
+    d = 0.01
+
+    for r_in in coil_1:
+        plt.gca().add_artist(
+            ptc.Circle((0, 0),
+                       radius=r_in,
+                       color=color,
+                       fill=False)
+        )
+
+    for r_in in coil_2:
+        plt.gca().add_artist(
+            ptc.Circle((np.max(coil_1) + np.max(coil_2) + d, 0),
+                       radius=r_in,
+                       color=color,
+                       fill=False)
+        )
+
+    y_max = np.max(np.concatenate((coil_1, coil_2)))
+    plt.xlim([-np.max(coil_1) - 0.01, np.max(coil_1) + 2 * np.max(coil_2) + 2 * 0.0015 + 0.01])
+    plt.ylim([-y_max - 0.01, y_max + 0.01])
+
+    plt.axis("off")
+    # plt.grid()
+
+    if name_fig is not None:
+        plt.savefig(name_fig)
+    plt.show()
+
+
+def save_figure_two_coil(name_test, data):
+    for d in data:
+        res = read_result(
+            name_file=d[0], name_set=name_test
+        )
+
+        coil_t = np.fromstring(res["coil_t"][1:-1], sep=", ", dtype=float)
+        coil_r = np.fromstring(res["coil_r"][1:-1], sep=", ", dtype=float)
+
+        name = "algorithm_name"
+        draw_two_coil(
+            coil_1=coil_t,
+            coil_2=coil_r,
+            color=d[1],
+            # title="Передающая и принимающая катушки индуктивности\n(слева-направо)",
+            name_fig=f"{name_test}_{res[name]}.svg"
+        )
+
+
 def main():
+    name_test = "test8"
+
     test_result_table(
-        name_test="test1",
+        name_test=name_test,
+        data=RESULTS,
+
+    )
+
+    save_figure_two_coil(
+        name_test=name_test,
         data=RESULTS
     )
 
