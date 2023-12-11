@@ -6,9 +6,14 @@ from compare_result import *
 RESULTS = [
     # "result/algorithm_1_result.csv",
     # "result/algorithm_2_result.csv",
-    ("result/algorithm_3_result.csv", "blue"),
-    ("result/algorithm_4_result.csv", "orange"),
-    ("result/deterministic_algorithm_result.csv", "green")
+    # ("result/algorithm_3_result.csv", "blue"),
+    # ("result/algorithm_4_result.csv", "orange"),
+    # ("result/deterministic_algorithm_result.csv", "green")
+]
+
+NEW_RESULTS = [
+    ("result/deterministic_algorithm_result.csv", "orange"),
+    ("result/sahc.csv", "blue"),
 ]
 
 
@@ -177,17 +182,17 @@ def save_figure_two_coil(name_test, data):
 
 
 def main():
-    name_test = "test8"
+    name_test = "test1"
 
-    test_result_table(
-        name_test=name_test,
-        data=RESULTS,
-
-    )
+    # test_result_table(
+    #     name_test=name_test,
+    #     data=RESULTS,
+    #
+    # )
 
     save_figure_two_coil(
         name_test=name_test,
-        data=RESULTS
+        data=NEW_RESULTS
     )
 
 

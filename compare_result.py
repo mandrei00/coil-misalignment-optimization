@@ -9,7 +9,8 @@ RESULTS = [
     # "result/algorithm_1_result.csv",
     # "result/algorithm_2_result.csv",
     # "result/algorithm_3_result.csv",
-    "result/algorithm_4_result.csv",
+    # "result/algorithm_4_result.csv",
+    "result/sahc.csv",
     "result/deterministic_algorithm_result.csv"
 ]
 
@@ -110,7 +111,7 @@ def show_table_system(name_csv_file, indices, name_excel_file=None):
 
 def main():
     diff_results = []
-    name_set = "test2"
+    name_set = "test1"
 
     for res in RESULTS:
         diff_results.append(read_result(

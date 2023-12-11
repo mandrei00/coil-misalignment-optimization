@@ -1,8 +1,7 @@
 from operator import itemgetter
-
-import numpy as np
-
 from deterministic_algorithm import *
+
+NAME_ALGORITHM = "SAHC"
 
 
 def fitness_func(w, r_l, r_t, r_r, p_max, coil_t, coil_r, distance):
@@ -21,7 +20,7 @@ def fitness_func(w, r_l, r_t, r_r, p_max, coil_t, coil_r, distance):
     l_r = self_inductance_coil(
         coil=np.linspace(*coil_r[:-1]), r_turn=coil_r[-1]
     )
-    c_r = 1 / (l_t * w ** 2)
+    c_r = 1 / (l_r * w ** 2)
     q_r = quality_factor(r_l + r_r, l_r, c_r)
 
     k_crit = 1 / np.sqrt(q_t * q_r)
@@ -46,8 +45,10 @@ def steepest_ascent_hill_climbing(
         min_max_p,
         system_param
 ):
+    flag = False
     # unpacking system parameters for calculate fitness function
     w, r_l, r_t, r_r = system_param
+
     p_min, p_max = min_max_p[0], min_max_p[1]
 
     # unpacking transmit coil variables
@@ -65,9 +66,9 @@ def steepest_ascent_hill_climbing(
         distance=distance
     )
 
-    po_max = distance[-1]
+    po_max = distance[1][-1]
     i_useless = 0
-    while i_useless < 100 and po_0 != po_max:
+    while i_useless <= 50 and po_0 != po_max:
         array = []
 
         r_out_tq = np.random.uniform(r_turn_t * (n_t + 4), 2 * r_out_r)
@@ -85,7 +86,6 @@ def steepest_ascent_hill_climbing(
              (r_in_r, r_out_r, k_r, r_turn_r))  # coil receive
         array.append(a)
 
-
         r_in_tq = np.random.uniform(4 * r_turn_t, r_out_t - r_turn_t * (n_t - 1))
         # calculate and save output power for mutate value r_in_tq
         po, p_l, p = fitness_func(
@@ -101,7 +101,6 @@ def steepest_ascent_hill_climbing(
              (r_in_r, r_out_r, k_r, r_turn_r))  # coil receive
         array.append(a)
 
-
         n_tq = np.random.randint(1, (r_out_t - r_in_t) // r_turn_t + 1)
         # calculate and save output power for mutate value n_tq
         po, p_l, p = fitness_func(
@@ -116,7 +115,6 @@ def steepest_ascent_hill_climbing(
              (r_in_t, r_out_t, n_tq, r_turn_t),  # coil transmit
              (r_in_r, r_out_r, k_r, r_turn_r))  # coil receive
         array.append(a)
-
 
         r_in_rq = np.random.uniform(0.001, 0.5 * r_out_r)
         # calculate and save output power for mutate value r_in_rq
@@ -152,9 +150,15 @@ def steepest_ascent_hill_climbing(
         # estimate mutation values
         array.sort(key=itemgetter(0, 1), reverse=True)
         if array[0][0] and array[0][1] > po_0:
-            print("Find better value... i_useless = 0")
+            flag = True
+
+            print("Find better value...")
             r_in_t, r_out_t, n_t, r_turn_t = array[0][2]
             r_in_r, r_out_r, k_r, r_turn_r = array[0][3]
+
+            print(f"coil_r = {r_in_r, r_out_r, k_r}")
+            print(f"coil_t = {r_in_t, r_out_t, n_t}")
+
             po_0 = array[0][1]
             i_useless = 0
 
@@ -166,7 +170,6 @@ def steepest_ascent_hill_climbing(
                 coil_r=(r_in_r, r_out_r, k_r, r_turn_r),
                 distance=distance
             )
-
             debug(x=distance[1], y_max=p_max, y_min=p_min,
                   y=p[0, :, 0], title="Выходная мощность",
                   x_label="po, м", y_label="P, Вт")
@@ -178,8 +181,7 @@ def steepest_ascent_hill_climbing(
     coil_t = (r_in_t, r_out_t, n_t, r_turn_t)
     coil_r = (r_in_r, r_out_r, k_r, r_turn_r)
 
-
-    return coil_t, coil_r
+    return flag, coil_t, coil_r
 
 
 def geometric_optimization_algorithm(**kwargs):
@@ -270,7 +272,7 @@ def geometric_optimization_algorithm(**kwargs):
                                                    distance=(d, po, fi),
                                                    range_m=(m_min, m_max))
 
-    coil_t, coil_r = steepest_ascent_hill_climbing(
+    flag, coil_t, coil_r = steepest_ascent_hill_climbing(
         system_param=(w, r_l, r_t, r_r),
         coil_t=(r_in_t, r_out_t, n_t, r_turn),
         coil_r=(r_in_r, r_out_r, k_r, r_turn),
@@ -284,7 +286,7 @@ def geometric_optimization_algorithm(**kwargs):
     coil_r = np.linspace(*coil_r[:-1])
 
     l_t = self_inductance_coil(coil_t, r_turn)
-    c_t = 1 / (w ** 2 * l_t)
+    c_t = 1 / (l_t * w ** 2)
     q_t = quality_factor(r_t, l_t, c_t)
     print(f"Transmitting part:\n r in_t={coil_t[0] * 1e3} мм"
           f"                  \n r out_t={coil_t[-1] * 1e3} мм"
@@ -294,8 +296,8 @@ def geometric_optimization_algorithm(**kwargs):
           f"                  \n Qt={q_t}\n")
 
     l_r = self_inductance_coil(coil_r, r_turn)
-    c_r = 1 / (w ** 2 * l_r)
-    q_r = quality_factor(r_t + r_r, l_r, c_r)
+    c_r = 1 / (l_r * w ** 2)
+    q_r = quality_factor(r_l + r_r, l_r, c_r)
     print(f"Receiving part:\n r in_r={coil_r[0] * 1e3} мм"
           f"               \n r out_r={coil_r[-1] * 1e3} мм"
           f"               \n Kr={len(coil_r)}"
@@ -310,9 +312,9 @@ def geometric_optimization_algorithm(**kwargs):
     )
 
     # show plot coupling coefficient
-    debug(x=po, y=k[0, :, 0],
-          y_label="k",
-          title="Коэффициент связи")
+    # debug(x=po, y=k[0, :, 0],
+    #       y_label="k",
+    #       title="Коэффициент связи")
 
     dk = np.round((np.max(k) - np.min(k)) / np.max(k) * 100, 3)
     print(f"The resulting difference in coupling coefficient: dk="
@@ -332,12 +334,21 @@ def geometric_optimization_algorithm(**kwargs):
     print(f"The resulting difference in mutual inductance: dM="
           f"{dm} %\n")
 
-    # show plot mutual inductance
-    debug(x=po, y_max=m_max, y_min=m_min,
-          y=m[0, :, 0], title="Взаимная индуктивность")
+    # calculation power transfer efficiency
+    efficiency = ((w ** 2) * (m ** 2) * r_l) / ((r_l + r_r) * (r_t * (r_r + r_l) + (w ** 2) * (m ** 2)))
+    # show plot power transfer efficiency
+    debug(x=po, y_label="η",
+          y=efficiency[0, :, 0], title="Эффективность передачи энергии")
 
+    # show plot mutual inductance
+    # debug(x=po, y_max=m_max, y_min=m_min,
+    #       y=m[0, :, 0], title="Взаимная индуктивность")
+
+    k_crit = 1 / np.sqrt(q_t * q_r)
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
+    a = z_r * z_t / (w * k_crit * np.sqrt(l_t * l_r))
+    b = w * k_crit * np.sqrt(l_t * l_r)
     vs = np.abs((a + b) * np.sqrt(p_max / r_l))
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
 
@@ -352,26 +363,26 @@ def geometric_optimization_algorithm(**kwargs):
     # show plot output power
     debug(x=po, y_max=p_max, y_min=p_min,
           y=p_l[0, :, 0], title="Выходная мощность",
-          x_label="M, Гн", y_label="P, Вт")
+          x_label="po, м", y_label="P, Вт")
 
-    # result = {
-    #     "result": flag,
-    #     "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
-    #     "power": p, "n": n, "f": f,
-    #     "r_l": r_l, "r_t": r_t, "r_r": r_r,
-    #     "r_turn": r_turn,
-    #     "coil_t": list(coil_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9, "q_t": q_t,
-    #     "coil_r": list(coil_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9, "q_r": q_r,
-    #     "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
-    #     "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
-    #     "k": list(k[0, :, 0]), "dk": dk,
-    #     "m": list(m[0, :, 0]), "dm": dm,
-    #     "p_l": list(p_l[0, :, 0]), "dpl": dpl,
-    #     "d_min": d_min, "d_max": d_max,
-    #     "po_min": po_min, "po_max": po_max,
-    #     "fi_min": fi_min, "fi_max": fi_max
-    # }
-    return None
+    result = {
+        "result": flag,
+        "test_name": kwargs["test_name"], "algorithm_name": NAME_ALGORITHM,
+        "power": p, "n": n, "f": f,
+        "r_l": r_l, "r_t": r_t, "r_r": r_r,
+        "r_turn": r_turn,
+        "coil_t": list(coil_t), "l_t": l_t * 1e6, "c_t": c_t * 1e9, "q_t": q_t,
+        "coil_r": list(coil_r), "l_r": l_r * 1e6, "c_r": c_r * 1e9, "q_r": q_r,
+        "m_min": m_min, "m_max": m_max, "dm_req": dm_req,
+        "p_min": p_min, "p_max": p_max, "dpl_req": dpl_req,
+        "k": list(k[0, :, 0]), "dk": dk,
+        "m": list(m[0, :, 0]), "dm": dm,
+        "p_l": list(p_l[0, :, 0]), "dpl": dpl,
+        "d_min": d_min, "d_max": d_max,
+        "po_min": po_min, "po_max": po_max,
+        "fi_min": fi_min, "fi_max": fi_max
+    }
+    return result
 
 
 def run_all_test():
@@ -383,7 +394,7 @@ def run_all_test():
         res.append(geometric_optimization_algorithm(**data))
 
     # save result of geometry optimization for each test
-    result = f"../result/algorithm_4_result.csv"
+    result = f"../result/sahc.csv"
     write(result, res)
 
 
@@ -396,15 +407,28 @@ def run_test(test_name):
             res.append(geometric_optimization_algorithm(**data))
 
     # save result of geometry optimization for each test
-    # result = f"../result/algorithm_4_result.csv"
-    # write(result, res)
+    result = f"../result/sahc.csv"
+    write(result, res)
 
+
+def run_idle(test_name):
+    dataset = "../" + DATASET
+    # an array of geometry optimization results for each test
+    res = []
+
+    for i in range(10):
+        print(f"Run algorithm {i}")
+        for data in read(dataset):
+            if data["test_name"] == test_name:
+                geometric_optimization_algorithm(**data)
+                break
 
 def main():
     # run_all_test()
-    run_test(test_name="test1")
-
+    # run_test(test_name="test1")
+    run_idle(
+        test_name="test1"
+    )
 
 if __name__ == "__main__":
     main()
-

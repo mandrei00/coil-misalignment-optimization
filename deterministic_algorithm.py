@@ -227,8 +227,21 @@ def coil_optimization_algorithm(**kwargs):
     debug(x=po, y_max=m_max, y_min=m_min,
           y=m[0, :, 0], title="Взаимная индуктивность")
 
+    # calculation power transfer efficiency
+    efficiency = ((w ** 2) * (m ** 2) * r_l) / ((r_l + r_r) * (r_t * (r_r + r_l) + (w ** 2) * (m ** 2)))
+    # show plot power transfer efficiency
+    debug(x=po, y_label="η",
+          y=efficiency[0, :, 0], title="Эффективность передачи энергии")
+
+    q_t = quality_factor(r_t, l_t, c_t)
+    q_r = quality_factor(r_r + r_l, l_r, c_r)
+    k_crit = 1 / np.sqrt(q_t * q_r)
     z_t = 1j * w * l_t + 1 / (1j * w * c_t) + r_t
     z_r = 1j * w * l_r + 1 / (1j * w * c_r) + r_l + r_r
+    a = z_r * z_t / (w * k_crit * np.sqrt(l_t * l_r))
+    b = w * k_crit * np.sqrt(l_t * l_r)
+    vs = np.abs((a + b) * np.sqrt(p_max / r_l))
+
     p_l = (w ** 2) * (m ** 2) * (vs ** 2) * r_l / (np.abs(z_t * z_r) + (w ** 2) * (m ** 2)) ** 2
 
     dpl_req = np.round((p_max - p_min) / p_max * 100, 3)
@@ -288,8 +301,17 @@ def run_test(test_name):
     write(result, res)
 
 
+def run_idle(test_name):
+    res = []
+    for data in read(DATASET):
+        if data["test_name"] == test_name:
+            res.append(coil_optimization_algorithm(**data))
+            break
+
+
 def main():
-    run_all_test()
+    run_idle(test_name="test1")
+    # run_all_test()
     # run_test(
     #     test_name="test1"
     # )
